@@ -1,69 +1,126 @@
-# RISC-V CPU 2x Image Zooming Project
+RISC-V CPU 2x Image Zooming Project
+This project implements a 2x image zooming algorithm using a custom-built single-cycle RISC-V CPU. The CPU reads a 50x50 grayscale image from memory and generates a 100x100 zoomed version using nearest neighbor interpolation.
 
-This project implements a 2x image zooming algorithm using a custom RISC-V CPU. The CPU reads a 50x50 grayscale image from memory and creates a 100x100 zoomed version using nearest neighbor interpolation.
+📁 Files
+File	Description
+proc.v	Verilog implementation of the RISC-V single-cycle processor
+test.v	Testbench to simulate the CPU and verify output
+run_simulation.v	Combined wrapper file for simulation
+README.md	This documentation file
 
-## Files
+🧠 How It Works
+Source Image: 50×50 grayscale pixels (2500 bytes) starting at memory address 0
 
-- `proc.v` - Main CPU implementation with all modules
-- `test.v` - Testbench to run the simulation
-- `run_simulation.v` - Combined file for simulation
-- `README.md` - This file
+Destination Image: 100×100 grayscale pixels (10,000 bytes) starting at address 8192
 
-## How it works
+Zoom Algorithm: Nearest neighbor interpolation — each source pixel is expanded into a 2×2 block in the destination
 
-1. **Source Image**: 50x50 grayscale pixels stored in memory starting at address 0
-2. **Destination Image**: 100x100 grayscale pixels stored in memory starting at address 8192
-3. **Algorithm**: Nearest neighbor interpolation - each source pixel is mapped to a 2x2 block in the destination
+🔁 Zooming Algorithm - Nearest Neighbor
+Concept: Each pixel in the zoomed (100×100) image corresponds to the nearest pixel in the original (50×50) image.
 
-## Algorithm Details
+🔬 Formula
+For destination coordinates (x_d, y_d):
 
-For each destination pixel (x, y):
-- Source pixel = (x/2, y/2)
-- Load source pixel value
-- Store to destination address = dest_base + y * dest_width + x
+Compute source coordinates:
+x_s = x_d / 2, y_s = y_d / 2 (integer division)
 
-## Running the Simulation
+Fetch pixel at (x_s, y_s) from source image
 
-To run the simulation using a Verilog simulator (like ModelSim, Icarus Verilog, or Verilator):
+Store it at (x_d, y_d) in the destination image
 
-```bash
-# Using Icarus Verilog
+🧮 Math:
+Let:
+
+dest_base = 8192
+
+dest_width = 100
+
+src_width = 50
+
+Then:
+
+text
+Copy
+Edit
+src_addr = y_s * src_width + x_s
+dst_addr = dest_base + y_d * dest_width + x_d
+For example:
+
+text
+Copy
+Edit
+For x_d = 4, y_d = 6
+  x_s = 2, y_s = 3
+  src_addr = 3 * 50 + 2 = 152
+  dst_addr = 8192 + 6 * 100 + 4 = 8796
+⚙️ CPU Architecture - Single-Cycle Processor
+A single-cycle processor executes each instruction in one clock cycle. This is simple and fast for small programs.
+
+🔧 Architecture Diagram
+rust
+Copy
+Edit
+[PC] --> [Instruction Memory] --> [Control Unit]
+         |                          |
+         v                          v
+     [Register File] <--> [ALU] <--> [Data Memory]
+Key Features:
+Instruction fetch, decode, execute, memory, write-back in one cycle
+
+Easy to design, test, and simulate
+
+Ideal for embedded and algorithm-specific tasks
+
+📜 RISC-V Instruction Set (RV32I)
+The CPU implements a subset of the RV32I instruction set:
+
+Type	Instructions
+Arithmetic	add, sub, addi
+Logical	and, or, xor
+Memory	lw, sw, lb, sb
+Control	beq, bne, jal, jalr
+Shift	sll, srl
+Multiply	Custom support: mul
+
+The CPU uses 32 general-purpose registers (x0 to x31), each 32 bits wide.
+
+🧪 Running the Simulation
+To simulate the CPU using Icarus Verilog:
+
+bash
+Copy
+Edit
+# Compile
 iverilog -o zoom_sim run_simulation.v
-vvp zoom_sim
 
-# Using Verilator
-verilator --cc run_simulation.v
+# Run
+vvp zoom_sim
+With Verilator:
+
+bash
+Copy
+Edit
+verilator --cc run_simulation.v --exe sim_main.cpp
 make -C obj_dir -f Vrun_simulation.mk
 ./obj_dir/Vrun_simulation
-```
+✅ Expected Output
+Input Memory: Contains 50×50 grayscale image (addresses 0–2499)
 
-## Expected Output
+Output Memory: Filled with 100×100 zoomed image (addresses 8192–16191)
 
-The simulation will:
-1. Load the source image from memory addresses 0-2499
-2. Process each pixel using the 2x zooming algorithm
-3. Store the zoomed image to memory addresses 8192-16191
-4. Generate a waveform file `zoom_simulation.vcd` for analysis
+Waveform: A zoom_simulation.vcd file is generated for debugging
 
-## Memory Layout
+🗂️ Memory Layout
+Region	Description	Address Range
+Source Image	50×50 = 2500 pixels	0 to 2499
+Zoomed Image	100×100 = 10000 pixels	8192 to 18191
+Instruction Memory	Up to 4KB of program	ROM[0] to ROM[1023]
 
-- **Source Image**: Addresses 0-2499 (50x50 pixels)
-- **Destination Image**: Addresses 8192-16191 (100x100 pixels)
-- **Instruction Memory**: Addresses 0-16383 (4KB)
+🛠️ CPU Features
+✅ Single-cycle RISC-V RV32I
 
-## CPU Features
+✅ ALU with add, sub, mul, and, or, xor
 
-- RISC-V RV32I instruction set
-- 32 general-purpose registers
-- ALU with arithmetic, logical, and multiplication operations
-- Memory interface for 8-bit grayscale pixel data
-- Branch and jump instructions for control flow
+✅ 32 general-purpose registers
 
-## Fixed Issues
-
-1. **Instruction Encoding**: Corrected all RISC-V instruction encodings
-2. **Register Usage**: Fixed register conflicts and usage patterns
-3. **Memory Addressing**: Proper source and destination address calculations
-4. **Loop Control**: Corrected branch instruction offsets and conditions
-5. **ALU Support**: Added multiplication support for address calculations
-6. **Testbench**: Created proper simulation environment 
+✅ Byte-level memory interface for grayscale pixels
